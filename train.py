@@ -85,10 +85,14 @@ print('Classification weight: ', config['w']['class'])
 print('Adversarial loss weight: ', config['w']['adver'])
 print('TV weight: ', config['w']['tv'])
 
-for n_epoch in range(epoch_0, epoch_0+epochs):
+expand_pending = True
 
-    if n_epoch == 10:
-        trainer.config['w']['recon'] = 0.1*trainer.config['w']['recon']
+for n_epoch in range(epoch_0, epochs):
+
+    if expand_pending and n_epoch >= 10:
+        expand_pending = False
+
+        trainer.config['w']['recon'] = 0.1 * trainer.config['w']['recon']
         # Load dataset at 1024 x 1024 resolution for the next 10 epochs
         batch_size = config['batch_size']
         img_size = (config['input_h'], config['input_w'])
