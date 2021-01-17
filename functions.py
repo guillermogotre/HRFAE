@@ -60,10 +60,8 @@ def vgg_transform(x):
     return out
 
 def get_predict_age(age_pb):
-    predict_age_pb = F.softmax(age_pb)
-    predict_age = torch.zeros(age_pb.size(0)).type_as(predict_age_pb)
-    for i in range(age_pb.size(0)):
-        for j in range(age_pb.size(1)):
-            predict_age[i] += j*predict_age_pb[i][j]
-    return predict_age
+    # TODO age_enum should be precomputed once and casted to device
+    age_enum = torch.arange(101)[None, :].type_as(age_pb)
+
+    return torch.sum(F.softmax(age_pb,1)*age_enum,1)
 
