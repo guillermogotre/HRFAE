@@ -78,19 +78,23 @@ class Trainer(nn.Module):
         return gradient_penalty
     
     def random_age(self, age_input, diff_val=20):
-        age_output = age_input.clone()
-        if diff_val > (self.config['age_max'] - self.config['age_min'])/2:
-            diff_val = (self.config['age_max'] - self.config['age_min'])//2
-        for i, age_ele in enumerate(age_output):
-            if age_ele < self.config['age_min'] + diff_val:
-                age_target = age_ele.clone().random_(age_ele + diff_val, self.config['age_max'])
-            elif (self.config['age_min'] + diff_val) <= age_ele <= (self.config['age_max'] - diff_val):
-                age_target = age_ele.clone().random_(self.config['age_min'] + 2*diff_val, self.config['age_max']+1)
-                if age_target <= age_ele + diff_val:
-                    age_target = age_target - 2*diff_val
-            elif age_ele > self.config['age_max'] - diff_val:
-                age_target = age_ele.clone().random_(self.config['age_min'], age_ele - diff_val)
-            age_output[i] = age_target
+        device = age_input.device
+        age_max = torch.tensor(self.config['age_max']).type_as(age_input)
+        age_min = torch.tensor(self.config['age_min']).type_as(age_input)
+
+        if diff_val > (age_max - age_min)/2:
+            diff_val = (age_max - age_min)//2
+
+        low_n = torch.maximum(age_input + 1 - diff_val, age_min) - age_min
+        up_n = (age_max) - torch.minimum(age_input + diff_val, age_max)
+
+        off_a = (torch.rand(low_n.size()).to(device) * (up_n + low_n)).int()
+
+        age_output = torch.where(
+            off_a < low_n,
+            age_input - diff_val - off_a,
+            age_input + diff_val + off_a - low_n)
+
         return age_output
 
     def gen_encode(self, x_a, age_a, age_b=0, training=False, target_age=0):
